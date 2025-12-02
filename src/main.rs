@@ -17,8 +17,12 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 // Entry point from boot.S
 #[no_mangle]
 pub extern "C" fn kernel_main() {
-    unsafe {
-        uart::puts("Hello, UART!\n");
+    loop {
+        unsafe {
+            let mut buf: [u8; 64] = [0; 64];
+            let len = uart::gets(&mut buf);
+            uart::puts("You typed: ");
+            uart::puts(core::str::from_utf8_unchecked(&buf[..len]));
+        }
     }
-    loop {}
 }

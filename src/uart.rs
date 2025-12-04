@@ -5,6 +5,8 @@ const UART_FR: usize = UART_BASE + 0x18; // Flag Register
 const UART_FR_RXFE: u32 = 1 << 4;
 const UART_FR_TXFF: u32 = 1 << 5;
 
+use heapless::String;
+
 pub fn init() {
     // UART initialization code would go here
 }
@@ -35,8 +37,8 @@ pub unsafe fn getc() -> u8 {
     core::ptr::read_volatile(dr) as u8
 }
 
-pub unsafe fn gets(buf: &mut [u8]) -> usize {
-    let mut i = 0;
+pub unsafe fn gets<const N: usize>(buf: &mut String<N>) -> usize {
+    buf.clear();
     loop {
         let c = getc();
 
@@ -46,21 +48,18 @@ pub unsafe fn gets(buf: &mut [u8]) -> usize {
         }
 
         if c == 0x7F || c == 0x08 {
-            if i > 0 {
-                i -= 1;
+            if ! buf.is_empty() {
+                buf.pop();
                 puts("\x08 \x08");
+                continue;
             }
-            continue;
         }
 
-        if i < buf.len() - 1 {
-            buf[i] = c;
-            i += 1;
+        if buf.push(c as char).is_err() {
             putc(c);
-        } else {
-            putc(0x07);
+            break;
         }
+        putc(c);
     }
-    buf[i] = 0;
-    i
+    buf.len()
 }

@@ -2,11 +2,13 @@
 #![no_main]
 use heapless::String;
 
-mod uart;
 mod printk;
+mod uart;
+
+#[cfg(feature = "test")]
+mod test;
 
 use core::arch::global_asm;
-use crate::printk::test_printk;
 
 // Include boot.S
 global_asm!(include_str!("../boot/boot.S"));
@@ -20,7 +22,8 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 // Entry point from boot.S
 #[no_mangle]
 pub extern "C" fn kernel_main() {
-    test_printk();
+    #[cfg(feature = "test")]
+    test::run_all();
 
     let mut buf = String::<64>::new();
     loop {
